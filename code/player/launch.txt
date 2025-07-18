@@ -1,1 +1,1 @@
-python car.py
+sudo python car.py

@@ -26,7 +26,8 @@ class Player(object):
         self.car_number = number
 
         # Calculate IP
-        self.ip = '192.168.2.{}'.format(200 + number)
+        # self.ip = '192.168.2.{}'.format(200 + number)
+        self.ip = '192.168.0.254'
 
         # Assign controller
         if controller == 'keyboard':
@@ -36,12 +37,12 @@ class Player(object):
         else:
             raise ValueError('Invalid controller')
 
-        # Define vairables
+        # Define variables
         self.remote_port = 6789
 
     def boot(self):
         """Launches car.py in the Pi"""
-        os.system('putty -ssh <username>@{} -pw <password> -m "launch.txt"'.format(self.ip))
+        os.system('putty -ssh cpslab1@{} -pw cpslab1 -m "./player/launch.txt"'.format(self.ip))
 
     def ping(self):
         """Tests for response"""
@@ -65,7 +66,7 @@ class Player(object):
                 struct.pack('fff?', self.controller.speed, self.controller.angle, self.controller.brightness,
                             clean))
             s.sendto(buffer, (self.ip, self.remote_port))
-            time.sleep(0.01)
+            time.sleep(1. / 100.)
 
 
 def main(car_list):

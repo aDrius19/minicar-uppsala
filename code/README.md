@@ -4,11 +4,11 @@
 The code also relies on the packages keyboard and pygame.
 
 ## Notes
-`<username>` and `<password>` on line 45 of [player_launcher.py](player_launcher.py) and line 26 of
+`<username>` and `<password>` on line 45 of [player_launcher.py](player_launcher.py) and line 28 of
 [update_firmware.py](update_firmware.py) must be replaced with the username and password of the Raspberry Pi.
 
 The default IP addresses of the minicars are `192.168.2.2<id>`, where `<id>` is the car ID(00-99). To change this, 
-modify line 29 in [player_launcher.py](player_launcher.py) and line 23 in [update_firmware.py](update_firmware.py).
+modify line 29 in [player_launcher.py](player_launcher.py) and line 24 in [update_firmware.py](update_firmware.py).
 
 The inputs have to be rebound for the joystick in [binds.py](player/binds.py).
 
