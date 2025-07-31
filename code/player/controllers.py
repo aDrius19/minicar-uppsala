@@ -50,10 +50,12 @@ class Keyboard(object):
     def accelerate(self, accel):
         """Increases/decreases the speed up to the max speed"""
         self.speed = min(self.max_speed, max(self.speed + accel, -self.max_speed))
+        print("Speed increase/decrease by {}".format(self.speed))
 
     def turn(self, turn):
         """Increases/decreases the turning angle up to the max angle"""
         self.angle = min(self.max_angle, max(self.angle + turn, -self.max_angle))
+        print("Angle increase/decrease by {}".format(self.angle))
 
     def listen(self):
         """Interprets bound inputs"""
@@ -93,10 +95,10 @@ class Keyboard(object):
                 self.speed = 0.
 
             if keyboard.is_pressed(self.binds.turn_left):
-                self.turn(self.max_angle)
+                self.turn(-self.max_angle)
 
             elif keyboard.is_pressed(self.binds.turn_right):
-                self.turn(-self.max_angle)
+                self.turn(self.max_angle)
 
             else:
                 self.angle = 0.
@@ -131,10 +133,10 @@ class Keyboard(object):
             self.brightness = 1.
 
         elif keyboard.is_pressed(self.binds.decrease_brightness):
-            self.brightness = round(max(0., self.brightness - 0.1), 2)
+            self.brightness = round(max(0., self.brightness - 0.05), 2)
 
         elif keyboard.is_pressed(self.binds.increase_brightness):
-            self.brightness = round(min(1., self.brightness + 0.1), 2)
+            self.brightness = round(min(1., self.brightness + 0.05), 2)
 
 
 class Joystick(object):

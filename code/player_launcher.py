@@ -21,7 +21,7 @@ from player import controllers
 class Player(object):
     """Defines the player object to be controlled externally by a controller"""
 
-    def __init__(self, number, controller, max_speed=0.7, max_angle=0.3125, max_accel=1., max_angle_acc=0.1):
+    def __init__(self, number, controller, max_speed=0.4, max_angle=0.5, max_accel=1., max_angle_acc=0.1):
         # Import variables
         self.car_number = number
 

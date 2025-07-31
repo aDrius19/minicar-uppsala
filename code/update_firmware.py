@@ -31,7 +31,6 @@ def run(car_list):
 
     if len(unresponsive) == 0:
         print('Copy complete')
-
     else:
         print('Cars {} unresponsive\nPress R to retry for unresponsive or ESC to stop'.format([*unresponsive]))
         while not keyboard.is_pressed('esc'):
