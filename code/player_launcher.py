@@ -21,18 +21,19 @@ from player import controllers
 class Player(object):
     """Defines the player object to be controlled externally by a controller"""
 
-    def __init__(self, number, controller, max_speed=0.4, max_angle=0.5, max_accel=1., max_angle_acc=0.1):
+    def __init__(self, number, controller, max_speed=0.55, max_angle=0.5, max_accel=1., max_angle_acc=0.1):
         # Import variables
         self.car_number = number
 
         # Calculate IP
-        # self.ip = '192.168.2.{}'.format(200 + number)
         self.ip = '192.168.0.254'
 
         # Assign controller
         if controller == 'keyboard':
+            print("Keyboard connected!")
             self.controller = controllers.Keyboard(max_speed, max_angle, max_accel, max_angle_acc)
         elif controller == 'joystick':
+            print("Joystick connected!")
             self.controller = controllers.Joystick(max_speed, max_angle, max_accel, max_angle_acc)
         else:
             raise ValueError('Invalid controller')

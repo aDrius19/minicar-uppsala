@@ -61,10 +61,12 @@ class Keyboard(object):
         """Interprets bound inputs"""
         # Quit
         if keyboard.is_pressed(self.binds.escape):
+            print("Quit the application!")
             self.running = False
 
         # Stop
         if keyboard.is_pressed(self.binds.stop):
+            print("Car stopped!")
             self.stop()
 
         # Set control type
@@ -86,18 +88,22 @@ class Keyboard(object):
         # Manual control
         if self.control_type == 0:
             if keyboard.is_pressed(self.binds.forwards):
+                print("W for acceleration is pressed!")
                 self.accelerate(self.max_speed)
 
             elif keyboard.is_pressed(self.binds.backwards):
+                print("S for deceleration is pressed!")
                 self.accelerate(-self.max_speed)
 
             else:
-                self.speed = 0.
+                self.stop()
 
             if keyboard.is_pressed(self.binds.turn_left):
+                print("A for turn left is pressed!")
                 self.turn(-self.max_angle)
 
             elif keyboard.is_pressed(self.binds.turn_right):
+                print("D for turn right is pressed!")
                 self.turn(self.max_angle)
 
             else:
@@ -106,15 +112,19 @@ class Keyboard(object):
         # Semi-automatic control
         elif self.control_type == 1:
             if keyboard.is_pressed(self.binds.accelerate):
+                print("W for acceleration is pressed!")
                 self.accelerate(self.max_speed)
 
             elif keyboard.is_pressed(self.binds.decelerate):
+                print("S for deceleration is pressed!")
                 self.accelerate(-self.max_speed)
 
             if keyboard.is_pressed(self.binds.merge_left):
+                print("Autonomous rotation to left!")
                 self.turn(self.max_angle)
 
             elif keyboard.is_pressed(self.binds.merge_right):
+                print("Autonomous rotation to right!")
                 self.turn(-self.max_angle)
 
             else:
@@ -125,17 +135,21 @@ class Keyboard(object):
         elif self.control_type == 3:
             pass
 
-        # Brightness control
+        # LEDs brightness control
         if keyboard.is_pressed(self.binds.lights_off):
+            print("Full lights off!")
             self.brightness = 0.
 
         elif keyboard.is_pressed(self.binds.lights_on):
+            print("Full lights on!")
             self.brightness = 1.
 
         elif keyboard.is_pressed(self.binds.decrease_brightness):
+            print("Decrease lights' brightness!")
             self.brightness = round(max(0., self.brightness - 0.05), 2)
 
         elif keyboard.is_pressed(self.binds.increase_brightness):
+            print("Increase lights' brightness!")
             self.brightness = round(min(1., self.brightness + 0.05), 2)
 
 

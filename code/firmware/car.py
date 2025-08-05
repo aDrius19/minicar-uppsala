@@ -14,15 +14,20 @@ import sys
 import time
 import board
 import busio
+import adafruit_bno055
 
 from rpi_hardware_pwm import HardwarePWM
 from adafruit_motor import servo
 from adafruit_pca9685 import PCA9685
-from adafruit_bno08x import (
-    BNO_REPORT_ACCELEROMETER,
-    BNO_REPORT_GYROSCOPE,
+from adafruit_bno055 import (
+    ACCGYRO_MODE,
 )
-from adafruit_bno08x.i2c import BNO08X_I2C
+"""When using the BNO085 sensor instead of the BNO055"""
+# from adafruit_bno08x import (
+#     BNO_REPORT_ACCELEROMETER,
+#     BNO_REPORT_GYROSCOPE,
+# )
+# from adafruit_bno08x.i2c import BNO08X_I2C
 
 
 class I2CIOComponents(object):
@@ -31,12 +36,16 @@ class I2CIOComponents(object):
     def __init__(self, channel):
         self.i2c = busio.I2C(board.SCL, board.SDA)
         self.pca = PCA9685(self.i2c)
-        self.bno = BNO08X_I2C(self.i2c)
+        self.bno = adafruit_bno055.BNO055_I2C(self.i2c)
+        """When using the BNO085 sensor instead of the BNO055"""
+        # self.bno = BNO08X_I2C(self.i2c)
         self.servo1 = servo.Servo(self.pca.channels[channel], actuation_range=90, min_pulse=1250, max_pulse=1750)
 
         self.pca.frequency = 100
-        self.bno.enable_feature(BNO_REPORT_ACCELEROMETER)
-        self.bno.enable_feature(BNO_REPORT_GYROSCOPE)
+        self.bno.mode = ACCGYRO_MODE
+        """When using the BNO085 sensor instead of the BNO055"""
+        # self.bno.enable_feature(BNO_REPORT_ACCELEROMETER)
+        # self.bno.enable_feature(BNO_REPORT_GYROSCOPE)
 
     def setservomotor(self, desired_value):
         self.servo1.angle = desired_value
@@ -52,7 +61,6 @@ class I2CIOComponents(object):
         print("Gyro:\r\n")
         gyro_x, gyro_y, gyro_z = self.bno.gyro
         print("X: %0.2f  Y: %0.2f Z: %0.2f rads/s\r\n" % (gyro_x, gyro_y, gyro_z))
-        # print("----------------------------------------------------------------------------\r\n")
 
     def stop(self):
         self.pca.deinit()
