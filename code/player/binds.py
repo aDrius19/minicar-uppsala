@@ -12,19 +12,19 @@ class KeyboardBinds(object):
 
         self.stop = 'e'
 
-        self.manual = '1'
+        self.manual = '0'
         self.forwards = 'w'
         self.backwards = 's'
         self.turn_left = 'a'
         self.turn_right = 'd'
 
-        self.semiautomatic = '2'
+        self.semiautonomous = '1'
         self.accelerate = 'w'
         self.decelerate = 's'
         self.merge_left = 'a'
         self.merge_right = 'd'
 
-        self.automatic = '3'
+        self.autonomous = '2'
 
         self.lights_off = '-'
         self.lights_on = '='
@@ -45,11 +45,11 @@ class JoystickBinds(object):
         self.speed = ('axis', 1)
         self.angle = ('axis', 4)
 
-        self.semiautomatic = ('button', 3)
+        self.semiautonomous = ('button', 3)
         self.accelerate = ('hat', (0, 1))
         self.turn = ('hat', (0, 0))
 
-        self.automatic = ('button', 1)
+        self.autonomous = ('button', 1)
 
         self.lights_off = ('button', 4)
         self.lights_on = ('button', 5)

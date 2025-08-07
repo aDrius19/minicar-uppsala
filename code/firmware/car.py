@@ -51,16 +51,24 @@ class I2CIOComponents(object):
         self.servo1.angle = desired_value
     
     def runimusensor(self):
-        print("---------------------------------------------------------------------------\r\n")
+        print("\r\n---------------------------------------------------------------------------\r\n")
+        file.write("\r\n---------------------------------------------------------------------------\r\n")
         time.sleep(0.5)
         print("Acceleration:\r\n")
+        file.write("Acceleration:\r\n")
         accel_x, accel_y, accel_z = self.bno.acceleration
         print("X: %0.2f  Y: %0.2f Z: %0.2f  m/s^2\r\n" % (accel_x, accel_y, accel_z))
+        file.write("X: %0.2f  Y: %0.2f Z: %0.2f  m/s^2\r\n" % (accel_x, accel_y, accel_z))
         print("\r\n")
+        file.write("\r\n")
 
         print("Gyro:\r\n")
+        file.write("Gyro:\r\n")
         gyro_x, gyro_y, gyro_z = self.bno.gyro
         print("X: %0.2f  Y: %0.2f Z: %0.2f rads/s\r\n" % (gyro_x, gyro_y, gyro_z))
+        file.write("X: %0.2f  Y: %0.2f Z: %0.2f rads/s\r\n" % (gyro_x, gyro_y, gyro_z))
+        print("---------------------------------------------------------------------------")
+        file.write("---------------------------------------------------------------------------")
 
     def stop(self):
         self.pca.deinit()
@@ -130,15 +138,19 @@ class Motor(object):
 
 def cleanup(signal=None, frame=None):
     """Default cars, clean pins and exit program"""
-    print('\r\nCleaning up...\r\n')
+    
+    print('\r\n\nCleaning up...')
+    file.write('\r\n\nCleaning up...')
+    file.close()
 
     dcmotor.stop()
     i2ciocomps.stop()
     led1.cleanup()
     led2.cleanup()
-
     time.sleep(1)
     io.cleanup()
+
+    s.close()
     sys.exit(0)
 
 
@@ -147,11 +159,18 @@ s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('192.168.0.1', 1))
 local_ip = s.getsockname()[0]
 
+#TODO the logic needs to change when multiple cars are connected
+if (str(local_ip) == '192.168.0.254'):
+    car_number = '0'
+
 if local_ip is None:
     raise ValueError('Local IP invalid')
 
+file = open('car-{}-log.txt'.format(car_number), 'w')
+
 # Bind to UDP port
 print('Binding to UDP port...\r\n')
+file.write('Binding to UDP port...\r\n')
 local_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 local_socket.bind((local_ip, 6789))  # Local port = 6789
 local_socket.settimeout(None)
@@ -176,6 +195,7 @@ brightness = 0.
 done = False
 
 print('Listening...\r\n')
+file.write('Listening...\r\n')
 
 # Main loop
 while not done:
@@ -202,6 +222,4 @@ while not done:
     i2ciocomps.setservomotor(angle_cycle)
     i2ciocomps.runimusensor() 
 
-
-s.close()
 cleanup()
