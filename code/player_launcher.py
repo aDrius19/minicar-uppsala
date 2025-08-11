@@ -20,11 +20,11 @@ from player import controllers
 
 class Player(object):
     """ 
-        Defines the player object to be controlled externally by keyboard/controller 
-        to run manual, semi-autonomous or autonomous
+        Defines the player object to be controlled externally by keyboard/controller to run the car in
+        manual, semi-autonomous or autonomous mode
     """
 
-    def __init__(self, number, controller, mode, max_speed=0.55, max_angle=0.5, max_accel=1., max_angle_acc=0.1):
+    def __init__(self, number, controller, mode, max_speed=0.5, max_angle=0.55, max_accel=1., max_angle_acc=0.1):
         # Import variables
         self.car_number = number
 
@@ -47,7 +47,7 @@ class Player(object):
         self.remote_port = 6789
 
     def boot(self):
-        """Launches car.py in the Pi"""
+        """Launches car.py in the Pi board"""
         os.system('putty -ssh {}@{} -pw {} -m "./player/launch.txt"'.format(self.username, self.ip, self.password))
 
     def copy_file(self):
@@ -58,12 +58,13 @@ class Player(object):
         return os.system('ping -n 1 -w 200 {} | find "Reply"'.format(self.ip))
 
     def transfer_data(self):
-        """Initiates the Pi and transfers incoming data to the Pi at 100Hz"""
+        """Initiates the Pi and transfers incoming data to the Pi board at 100Hz"""
         th = Thread(target=self.boot)
         th.start()
         print('Listening...')
 
         while self.controller.running:
+            # listening for controller commands
             self.controller.listen()
 
             # Send data at 100Hz

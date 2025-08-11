@@ -8,9 +8,9 @@ class KeyboardBinds(object):
 
     def __init__(self):
         self.escape = 'esc'
-        self.pause = 'q'
+        self.pause = 'e'
 
-        self.stop = 'e'
+        self.stop = 'q'
 
         self.manual = '0'
         self.forwards = 'w'

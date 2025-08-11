@@ -5,7 +5,7 @@ It is to be uploaded to the SD card on the Raspberry Pi board.
 The library RPi.GPIO is part of Raspbian
 """
 
-import RPi.GPIO as io
+import RPi.GPIO as io # type: ignore
 import select
 import signal
 import socket
