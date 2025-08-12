@@ -13,6 +13,7 @@ import numpy as np
 from player import binds
 
 def safe_write(file, msg):
+    """Displays on console and writes to a .txt file safely"""
     if file and not file.closed:
         print(msg)
         file.write(msg)
@@ -20,10 +21,8 @@ def safe_write(file, msg):
 
 #TODO adapt the class for the camera to detect the full and/or half lines in which the car needs to function 
 # autonomous meaning to steer right/left itself when detecting a turn and decrease/increase the motor's speed 
-# when approaching/distancing from a turn - extending to stop the car if it detects an object (other car) at a
-# certain distance and cannot avoid it
-# +
-# object collision detection (non-ArUco)
+# when approaching/distancing from a turn - extending to stop the car if it detects an object with a marker 
+# or not within certain distance and cannot avoid it
 class Autonomous(object):
     
     """ 
@@ -307,12 +306,10 @@ class Autonomous(object):
 class Keyboard(object):
     """Defines the Keyboard object to transfer keyboard inputs into player instructions"""
 
-    def __init__(self, mode, max_speed, max_angle, max_accel, max_angle_acc):
+    def __init__(self, mode, max_speed, max_angle):
         # Import variables
         self.max_speed = max_speed
         self.max_angle = max_angle
-        self.max_accel = max_accel
-        self.max_angle_acc = max_angle_acc
 
         # Define variables
         self.speed = 0.
@@ -358,9 +355,10 @@ class Keyboard(object):
     def stop(self):
         """Shutdowns the motor, resets the servo's angle to stop the car"""
         if keyboard.is_pressed(self.binds.stop):
-            safe_write(self.file,"Car is stopping...\nNeutral steering position...\n")
             self.motor_stop()
             self.neutral_steering()
+            
+            safe_write(self.file,"Car is stopping...\nNeutral steering position...\n")
 
     def accelerate(self, accel):
         """Increases/decreases the speed up to the max speed"""
@@ -388,20 +386,20 @@ class Keyboard(object):
 
         # Set control type
         if keyboard.is_pressed(self.binds.manual):
-            safe_write(self.file,'Switching to Manual Control...\n')
-            
             self.control_type = 0
             time.sleep(0.1)
+
+            safe_write(self.file,'Switching to Manual Control...\n')
         elif keyboard.is_pressed(self.binds.semiautonomous):
-            safe_write(self.file,'Switching to Semi-Autonomous Control...\n')
-            
             self.control_type = 1
             time.sleep(0.1)
+
+            safe_write(self.file,'Switching to Semi-Autonomous Control...\n')
         elif keyboard.is_pressed(self.binds.autonomous):
-            safe_write(self.file,'Switching to Autonomous Control...\n')
-            
             self.control_type = 2
             time.sleep(0.1)
+            
+            safe_write(self.file,'Switching to Autonomous Control...\n')
 
         # Manual control
         if self.control_type == 0:
@@ -409,29 +407,29 @@ class Keyboard(object):
             turned = False
 
             if forward_pressed and backward_pressed:
-                safe_write(self.file,"W and S - breaking with {}!\n".format(self.speed))
                 self.motor_stop()
+                safe_write(self.file,"W and S - breaking with {}!\n".format(self.speed))
 
                 moved = True
             elif forward_pressed:
-                safe_write(self.file,"W - acceleration with {}!\n".format(self.speed))
                 self.accelerate(self.max_speed)
+                safe_write(self.file,"W - acceleration with {}!\n".format(self.speed))
 
                 moved = True
             elif backward_pressed:
-                safe_write(self.file,"S - deceleration with {}!\n".format(self.speed))
                 self.accelerate(-self.max_speed)
+                safe_write(self.file,"S - deceleration with {}!\n".format(self.speed))
                 
                 moved = True
 
             if keyboard.is_pressed(self.binds.turn_left):
-                safe_write(self.file,"A - turn left with {}!\n".format(self.angle))
                 self.turn(-self.max_angle)
+                safe_write(self.file,"A - turn left with {}!\n".format(self.angle))
 
                 turned = True
             elif keyboard.is_pressed(self.binds.turn_right):
-                safe_write(self.file,"D - turn right with {}!\n".format(self.angle))
                 self.turn(self.max_angle)
+                safe_write(self.file,"D - turn right with {}!\n".format(self.angle))
 
                 turned = True
             
@@ -441,75 +439,75 @@ class Keyboard(object):
             elif not moved and turned:
                 self.break_until_stop()
         # Semi-autonomous control
-        #TODO logic should be this one - have the implementation ready in Autonomous class
+        # TODO logic should be similar to this one - coming from the Autonomous class object
+        # maybe some adjustment after the working implementation is done
         elif self.control_type == 1:
             moved = False
 
             if forward_pressed and backward_pressed:
-                safe_write(self.file,"W and S - breaking with {}!\n".format(self.speed))
                 self.motor_stop()
+                safe_write(self.file,"W and S - breaking with {}!\n".format(self.speed))
 
                 moved = True
             elif forward_pressed:
-                safe_write(self.file,"W - acceleration with {}!\n".format(self.speed))
                 self.accelerate(self.max_speed)
+                safe_write(self.file,"W - acceleration with {}!\n".format(self.speed))
 
                 moved = True
             elif backward_pressed:
-                safe_write(self.file,"S - deceleration with {}!\n".format(self.speed))
                 self.accelerate(-self.max_speed)
+                safe_write(self.file,"S - deceleration with {}!\n".format(self.speed))
                 
                 moved = True
 
             if not moved:
                 self.break_until_stop()      
 
-            safe_write(self.file, "Autonomous turning with {}!".format(self.angle))
             self.angle, _ = Autonomous(0).run()
+            safe_write(self.file, "Autonomous turning with {}!".format(self.angle))
 
             self.stop()
         # autonomous control
-        #TODO logic should be this one - have the implementation ready in Autonomous class
+        # TODO logic should be similar to this one - coming from the Autonomous class object
+        # maybe some adjustment after the working implementation is done
         elif self.control_type == 2:
-            safe_write(self.file, "Autonomous speed of {} and turning with {}!".format(self.speed, self.angle))
             self.angle, self.speed = Autonomous(1).run()
+            safe_write(self.file, "Autonomous speed of {} and turning with {}!".format(self.speed, self.angle))
 
             self.stop()
 
         # LEDs brightness control
         if keyboard.is_pressed(self.binds.lights_off):
-            safe_write(self.file,"All lights full off!\n")
-
             self.turned_on = False
             self.brightness = 0.
+            
+            safe_write(self.file,"All lights full off!\n")
         elif keyboard.is_pressed(self.binds.lights_on):
-            safe_write(self.file,"All lights full on!\n")
-
             self.turned_on = True
             self.brightness = 1.
+            
+            safe_write(self.file,"All lights full on!\n")
 
         if self.turned_on:
             if keyboard.is_pressed(self.binds.decrease_brightness) and not keyboard.is_pressed(self.binds.lights_on):
+                self.brightness = round(max(0., self.brightness - 0.05), 2)
+                
                 if self.brightness > 0.:
                     safe_write(self.file,"Decrease lights' brightness, lights' value: {}!\n".format(self.brightness))
-
-                self.brightness = round(max(0., self.brightness - 0.05), 2)
             elif keyboard.is_pressed(self.binds.increase_brightness) and not keyboard.is_pressed(self.binds.lights_on):
+                self.brightness = round(min(1., self.brightness + 0.05), 2)
+                
                 if self.brightness < 1.:
                     safe_write(self.file,"Increase lights' brightness, lights' value: {}!\n".format(self.brightness))
-
-                self.brightness = round(min(1., self.brightness + 0.05), 2)
 
 
 class Joystick(object):
     """Defines the Joystick object to transfer joystick inputs into player instructions"""
 
-    def __init__(self, max_speed, max_angle, max_accel, max_angle_acc):
+    def __init__(self, max_speed, max_angle):
         # Import variables
         self.max_speed = max_speed
         self.max_angle = max_angle
-        self.max_accel = max_accel
-        self.max_angle_acc = max_angle_acc
 
         # Define variables
         self.speed = 0.
@@ -601,9 +599,10 @@ class Joystick(object):
     def stop(self):
         """Shutdowns the motor, resets the servo's angle to stop the car"""
         if keyboard.is_pressed(self.binds.stop):
-            safe_write(self.file,"Car is stopping...\nNeutral steering position...\n")
             self.motor_stop()
             self.neutral_steering()
+            
+            safe_write(self.file,"Car is stopping...\nNeutral steering position...\n")
 
     def listen(self):
         """Interprets bound inputs"""
@@ -619,58 +618,56 @@ class Joystick(object):
 
         # Set control type
         if keyboard.is_pressed(self.binds.manual):
-            safe_write(self.file,'Switching to Manual Control...\n')
-            
             self.control_type = 0
             time.sleep(0.1)
-        elif keyboard.is_pressed(self.binds.semiautonomous):
-            safe_write(self.file,'Switching to Semi-Autonomous Control...\n')
             
+            safe_write(self.file,'Switching to Manual Control...\n')
+        elif keyboard.is_pressed(self.binds.semiautonomous):
             self.control_type = 1
             time.sleep(0.1)
-        elif keyboard.is_pressed(self.binds.autonomous):
-            safe_write(self.file,'Switching to Autonomous Control...\n')
             
+            safe_write(self.file,'Switching to Semi-Autonomous Control...\n')
+        elif keyboard.is_pressed(self.binds.autonomous):            
             self.control_type = 2
             time.sleep(0.1)
+            
+            safe_write(self.file,'Switching to Autonomous Control...\n')
 
         # Manual control
         if self.control_type == 0:
-            safe_write(self.file,"Manual moving forward with {} and manual turn with {}!\n".format(self.speed, self.angle))
-
             self.speed = self.max_speed * -self.check(self.binds.speed)
             self.angle = self.max_angle * -self.check(self.binds.angle)
+            
+            safe_write(self.file,"Manual moving forward with {} and manual turn with {}!\n".format(self.speed, self.angle))
 
         # Semi-autonomous control
+        # TODO logic should be similar to this one - coming from the Autonomous class object
+        # maybe some adjustment after the working implementation is done
         elif self.control_type == 1:
+            self.accelerate(self.max_speed * self.check(self.binds.accelerate) / 10.)
             safe_write(self.file,"Manual moving forward with {}!\n".format(self.speed))
 
-            self.accelerate(self.max_speed * self.check(self.binds.accelerate) / 10.)
-
-            safe_write(self.file, "Autonomous turning with {}!".format(self.angle))
             self.angle, _ = Autonomous(0).run()
+            safe_write(self.file, "Autonomous turning with {}!".format(self.angle))
 
             self.stop()
 
         # autonomous control
+        # TODO logic should be similar to this one - coming from the Autonomous class object
+        # maybe some adjustment after the working implementation is done
         elif self.control_type == 2:
-            safe_write(self.file, "Autonomous speed of {} and turning with {}!".format(self.speed, self.angle))
             self.angle, self.speed = Autonomous(1).run()
+            safe_write(self.file, "Autonomous speed of {} and turning with {}!".format(self.speed, self.angle))
 
             self.stop()
 
         # Brightness control
         if self.check(self.binds.brightness) > 0.5:
-            safe_write(self.file,"Adjust lights' brightness, lights' value: {}!\n".format(self.brightness))
-
             self.brightness = self.check(self.binds.brightness)
-
+            safe_write(self.file,"Adjust lights' brightness, lights' value: {}!\n".format(self.brightness))
         elif self.check(self.binds.lights_on) == 1:
-            safe_write(self.file,"All lights full on!\n")
-
             self.brightness = 1.
-
+            safe_write(self.file,"All lights full on!\n")
         elif self.check(self.binds.lights_off) == 1:
-            safe_write(self.file,"All lights full off!\n")
-
             self.brightness = 0.
+            safe_write(self.file,"All lights full off!\n")

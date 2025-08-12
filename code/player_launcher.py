@@ -24,7 +24,7 @@ class Player(object):
         manual, semi-autonomous or autonomous mode
     """
 
-    def __init__(self, number, controller, mode, max_speed=0.5, max_angle=0.55, max_accel=1., max_angle_acc=0.1):
+    def __init__(self, number, controller, mode, max_speed=0.5, max_angle=0.5):
         # Import variables
         self.car_number = number
 
@@ -36,10 +36,10 @@ class Player(object):
         # Assign controller
         if controller == 'keyboard':
             print("Keyboard connected!")
-            self.controller = controllers.Keyboard(mode, max_speed, max_angle, max_accel, max_angle_acc)
+            self.controller = controllers.Keyboard(mode, max_speed, max_angle)
         elif controller == 'joystick':
             print("Joystick connected!")
-            self.controller = controllers.Joystick(mode, max_speed, max_angle, max_accel, max_angle_acc)
+            self.controller = controllers.Joystick(mode, max_speed, max_angle)
         else:
             raise ValueError('Invalid controller')
 
