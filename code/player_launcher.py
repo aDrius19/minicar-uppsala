@@ -13,20 +13,23 @@ import time
 import os
 import sys
 import keyboard
-from threading import Thread
+import cv2
+from threading import Thread, Lock
 
-from player import controllers
+from player import controllers, binds
+from aut_controller import init_camera
 
-
+#TODO see if here some changes are needed also
 class Player(object):
     """ 
         Defines the player object to be controlled externally by keyboard/controller to run the car in
         manual, semi-autonomous or autonomous mode
     """
 
-    def __init__(self, number, controller, mode, max_speed=0.5, max_angle=0.5):
+    def __init__(self, number, controller, mode, capture, ideal_speed=0.55, max_angle=0.5):
         # Import variables
         self.car_number = number
+        self.capture = capture
 
         # Calculate IP
         self.ip = '192.168.0.254'
@@ -36,10 +39,10 @@ class Player(object):
         # Assign controller
         if controller == 'keyboard':
             print("Keyboard connected!")
-            self.controller = controllers.Keyboard(mode, max_speed, max_angle)
+            self.controller = controllers.Keyboard(mode, self.car_number, self.capture, ideal_speed, max_angle)
         elif controller == 'joystick':
             print("Joystick connected!")
-            self.controller = controllers.Joystick(mode, max_speed, max_angle)
+            self.controller = controllers.Joystick(mode, self.car_number, self.capture, ideal_speed, max_angle)
         else:
             raise ValueError('Invalid controller')
 
@@ -58,6 +61,7 @@ class Player(object):
         return os.system('ping -n 1 -w 200 {} | find "Reply"'.format(self.ip))
 
     def transfer_data(self):
+        global latest_frame
         """Initiates the Pi and transfers incoming data to the Pi board at 100Hz"""
         th = Thread(target=self.boot)
         th.start()
@@ -66,6 +70,10 @@ class Player(object):
         while self.controller.running:
             # listening for controller commands
             self.controller.listen()
+
+            if self.controller.frame is not None:
+                with frame_lock:
+                    latest_frame = self.controller.frame
 
             # Send data at 100Hz
             buffer = bytearray(
@@ -78,47 +86,73 @@ class Player(object):
         print("Copying log file from the Pi board...")
         self.copy_file()
 
+        s.close()
 
-def run(car_list):
-    """Starts and runs the listed cars"""
 
+def players_run(car_list):
+    """Start and run the listed cars"""
     unresponsive = []
+    capture = init_camera(1)
+    global latest_frame
+    key_bind = binds.KeyboardBinds()
+
     print('Initializing...')
     for car_number in car_list:
         car_number = int(car_number)
-        players[car_number] = Player(car_number, args.controller, args.mode)
+        players[car_number] = Player(car_number, args.controller, args.mode, capture)
 
         response = players[car_number].ping()
         if response == 0:
+            print('Player {} responsive and ready to drive!'.format(car_number))
+
             players_thread[car_number] = Thread(target=players[car_number].transfer_data)
             players_thread[car_number].start()
         elif response == 1:
-            del players[car_number]
             print('Player {} unresponsive!'.format(car_number))
+            
+            del players[car_number]
             unresponsive.append(car_number)
     
     if len(unresponsive) == 0:
         print('Initializing finished!\nSending...')
     else:
-        print('Cars {} unresponsive!\nPress R to retry for unresponsive or Q to stop!'.format([*unresponsive]))
+        print('Cars {} unresponsive!\nPress R to retry connecting or Q the connection!'.format([*unresponsive]))
 
         while True:
-            if keyboard.is_pressed('q'):
-                print("Quitting the control!")
+            if keyboard.is_pressed(key_bind.stop):
+                print("Quitting the connection!")
+                s.close()
                 break
-            elif keyboard.is_pressed('r'):
-                print("Retrying unresponsive cars...")
-                run(unresponsive)
+            elif keyboard.is_pressed(key_bind.retry):
+                print("\n\nRetry connecting to unresponsive car(s)...")
+                players_run(unresponsive)
                 break
 
         time.sleep(0.1)
+
+    while True:
+        with frame_lock:
+            frame = latest_frame.copy() if latest_frame is not None else None
+
+        if frame is not None:
+            cv2.imshow("Autonomous Cars View", frame)
+        
+        if cv2.waitKey(1) & 0xFF == key_bind.exit_ASCII:
+            print("Exiting visualization.")
+            break
+
+        time.sleep(0.02)  # ~50Hz display refresh
+    
+    capture.release()
+    cv2.destroyAllWindows()
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Start and manually control a car")
     parser.add_argument('-n', '--cars', nargs='+', type=int, default=None, help='Manual cars: input the ID of each one')
     parser.add_argument('-c', '--controller', type=str, default='keyboard', help='Controller type: keyboard or joystick')
-    #TODO change the default to 2 when the car is fully autonomous to operate
+    #TODO change the default --mode to 2 ONLY after the car is fully functional in the autonomous mode (fully operational)
     parser.add_argument('-m', '--mode', type=int, default='0', help='Operation mode: 0 - manual, 1 - semi-autonomous, 2 - autonomous')
     args = parser.parse_args()
 
@@ -131,4 +165,8 @@ if __name__ == '__main__':
 
     players = {}
     players_thread = {}
-    run(args.cars)
+    
+    frame_lock = Lock()
+    latest_frame = None
+
+    players_run(args.cars)

@@ -7,10 +7,10 @@ class KeyboardBinds(object):
     """Binding information for the keyboard controller"""
 
     def __init__(self):
-        self.escape = 'esc'
-        self.pause = 'e'
-
+        self.exit = 'esc'
+        self.exit_ASCII = 27
         self.stop = 'q'
+        self.retry = 'r'
 
         self.manual = '0'
         self.forwards = 'w'
@@ -36,9 +36,8 @@ class JoystickBinds(object):
     """Binding information for the joystick controller"""
 
     def __init__(self):
-        self.escape = ('button', 6)
-        self.pause = ('button', 7)
-
+        self.exit = ('button', 6)
+        self.retry = ('button', 7)
         self.stop = ('button', 0)
 
         self.manual = ('button', 2)

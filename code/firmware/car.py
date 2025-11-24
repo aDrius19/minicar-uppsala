@@ -14,41 +14,48 @@ import sys
 import time
 import board
 import busio
-import adafruit_bno055
 
 from rpi_hardware_pwm import HardwarePWM
 from adafruit_motor import servo
 from adafruit_pca9685 import PCA9685
-from adafruit_bno055 import (
-    ACCGYRO_MODE,
-)
-"""When using the BNO085 sensor instead of the BNO055"""
-# from adafruit_bno08x import (
-#     BNO_REPORT_ACCELEROMETER,
-#     BNO_REPORT_GYROSCOPE,
-# )
-# from adafruit_bno08x.i2c import BNO08X_I2C
 
 
 class I2CIOComponents(object):
-    """For each I2C I/O component that is connected to the Pi board"""
+    """For each I2C I/O component that is connected to the RasPi board"""
 
     def __init__(self, channel):
         self.i2c = busio.I2C(board.SCL, board.SDA)
+        devices = [hex(x) for x in self.i2c.scan()]
+
+        if "0x28" in devices or "0x29" in devices:  # BNO055 addresses
+            from adafruit_bno055 import ACCGYRO_MODE, BNO055_I2C
+
+            self.bno = BNO055_I2C(self.i2c)
+            self.bno.mode = ACCGYRO_MODE
+            print("[Detected] BNO055 IMU sensor!\r\n")
+            file.write("[Detected] BNO055 IMU sensor!\r\n")
+        elif "0x4a" in devices or "0x4b" in devices:  # BNO08X addresses
+            from adafruit_bno08x import (
+                BNO_REPORT_ACCELEROMETER,
+                BNO_REPORT_GYROSCOPE,
+            )
+            from adafruit_bno08x.i2c import BNO08X_I2C
+
+            self.bno = BNO08X_I2C(self.i2c)
+            self.bno.enable_feature(BNO_REPORT_ACCELEROMETER)
+            self.bno.enable_feature(BNO_REPORT_GYROSCOPE)
+            print("[Detected] BNO08X IMU sensor!\r\n")
+            file.write("[Detected] BNO08X IMU sensor!\r\n")
+        else:
+            raise RuntimeError("No supported IMU sensor detected on I2C bus!")
+        
         self.pca = PCA9685(self.i2c)
-        self.bno = adafruit_bno055.BNO055_I2C(self.i2c)
-        """When using the BNO085 sensor instead of the BNO055"""
-        # self.bno = BNO08X_I2C(self.i2c)
-        self.servo1 = servo.Servo(self.pca.channels[channel], actuation_range=90, min_pulse=1250, max_pulse=1750)
-
         self.pca.frequency = 100
-        self.bno.mode = ACCGYRO_MODE
-        """When using the BNO085 sensor instead of the BNO055"""
-        # self.bno.enable_feature(BNO_REPORT_ACCELEROMETER)
-        # self.bno.enable_feature(BNO_REPORT_GYROSCOPE)
-
+        
+        self.rc_car_servo = servo.Servo(self.pca.channels[channel], actuation_range=90, min_pulse=1250, max_pulse=1750)
+        
     def setservomotor(self, desired_value):
-        self.servo1.angle = desired_value
+        self.rc_car_servo.angle = desired_value
     
     def runimusensor(self):
         print("\r\n---------------------------------------------------------------------------\r\n")
@@ -75,7 +82,7 @@ class I2CIOComponents(object):
         
     
 class Output(object):
-    """Defines the Output object to send inputs to the components"""
+    """Defines the Output object to send input signals to the actuator components"""
 
     def __init__(self, pwm_pin, neutral_duty_cycle=0., duty_cycle_range=(0., 99.), flag='S'):
         # Local variables and starting values
@@ -113,7 +120,7 @@ class Output(object):
 class Motor(object):
     """ 
         Defines Motor object to control Hardware GPIO pins and 
-        Output object for inputs on the motor driver
+        add Output object for input signals
     """
 
     def __init__(self, pwm_pin, gpio_pins, neutral_duty_cycle=0., duty_cycle_range=(0., 99.)):
@@ -136,8 +143,8 @@ class Motor(object):
         self.ENA.cleanup()
 
 
-def cleanup(signal=None, frame=None):
-    """Default cars, clean pins and exit program"""
+def cleanup():
+    """Stop components, clean pins and exit program"""
     
     print('\r\n\nCleaning up...')
     file.write('\r\n\nCleaning up...')
