@@ -17,7 +17,7 @@ import cv2
 from threading import Thread, Lock
 
 from player import controllers, binds
-from aut_controller import init_camera
+from aut_controller_area import init_camera
 
 #TODO see if here some changes are needed also
 class Player(object):
@@ -31,8 +31,13 @@ class Player(object):
         self.car_number = number
         self.capture = capture
 
-        # Calculate IP
-        self.ip = '192.168.0.254'
+        # Calculate IP and slicing car_number from IP to copy the log file
+        if self.car_number in range(0,10):
+            self.ip = f"192.168.0.20{self.car_number}"
+            self.copy_file_nb = self.ip[-1:]
+        else:
+            self.ip = f"192.168.0.2{self.car_number}"
+            self.copy_file_nb = self.ip[-2:]
         self.username = 'cpslab1'
         self.password = 'cpslab1'
 
@@ -54,7 +59,7 @@ class Player(object):
         os.system('putty -ssh {}@{} -pw {} -m "./player/launch.txt"'.format(self.username, self.ip, self.password))
 
     def copy_file(self):
-        os.system('pscp -pw {} {}@{}:car-{}-log.txt ./firmware/console_prints'.format(self.password, self.username, self.ip, self.car_number))
+        os.system('pscp -pw {} {}@{}:car-{}-log.txt ./firmware/console_prints'.format(self.password, self.username, self.ip, self.copy_file_nb))
 
     def ping(self):
         """Tests for response"""
@@ -87,6 +92,7 @@ class Player(object):
         self.copy_file()
 
         s.close()
+        sys.exit(0)
 
 
 def players_run(car_list):
@@ -122,6 +128,7 @@ def players_run(car_list):
             if keyboard.is_pressed(key_bind.stop):
                 print("Quitting the connection!")
                 s.close()
+                sys.exit(0)
                 break
             elif keyboard.is_pressed(key_bind.retry):
                 print("\n\nRetry connecting to unresponsive car(s)...")
@@ -136,9 +143,12 @@ def players_run(car_list):
 
         if frame is not None:
             cv2.imshow("Autonomous Cars View", frame)
+        else:
+            sys.exit("No frame available for visualisation.")
+            break
         
         if cv2.waitKey(1) & 0xFF == key_bind.exit_ASCII:
-            print("Exiting visualization.")
+            sys.exit("Exiting visualisation.")
             break
 
         time.sleep(0.02)  # ~50Hz display refresh
@@ -149,7 +159,7 @@ def players_run(car_list):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Start and manually control a car")
+    parser = argparse.ArgumentParser(description="Start the control of the minicar(s)")
     parser.add_argument('-n', '--cars', nargs='+', type=int, default=None, help='Manual cars: input the ID of each one')
     parser.add_argument('-c', '--controller', type=str, default='keyboard', help='Controller type: keyboard or joystick')
     #TODO change the default --mode to 2 ONLY after the car is fully functional in the autonomous mode (fully operational)

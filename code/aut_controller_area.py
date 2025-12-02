@@ -7,8 +7,9 @@ from threading import Lock
 
 
 #TODO
-# adjust as much as I can
-# take a video out of this and send
+# adjust as much as I can for one car
+# add the other ones and change the approach to include 
+# also computation based on marker_ID and/or car_ID
 
 # -------------------------
 # CONFIG / TUNING CONSTANTS
@@ -16,12 +17,17 @@ from threading import Lock
 AREA_DICT = aruco.DICT_6X6_250    # dictionary used for area corner markers
 CAR_DICT = aruco.DICT_4X4_50      # dictionary used for car markers (front/back)
 OBJ_DICT = aruco.DICT_5X5_100     # dictionary used for object detection
-TARGET_RADIUS_PIX = 120            # pixels threshold to consider target reached
-MIN_SPEED = 0.5
-MAX_SPEED = 0.65
+
+MIN_SPEED = 0.45
+MAX_SPEED = 0.6
 MAX_SERVO = 0.5
+
+TARGET_RADIUS_PIX = 120            # pixels threshold to consider target reached
+# OBJECT_DISTANCE = 160
 STEER_K_DEG_TO_NORM = 1.0 / 90.0  # convert degrees->[-1,1]
+# STEER_K = 1.0 / 90.0  # convert degrees->[-1,1]
 INSIDE_PENALTY = 0.5              # speed multiplier when outside area
+# SMOOTH = 0.5                # smoothing factor for speed/servo (0..1)
 SMOOTH_ALPHA = 0.5                # smoothing factor for speed/servo (0..1)
 
 # thread-safe camera lock
@@ -260,6 +266,129 @@ def compute_obstacle_avoidance(midpoint, obstacles, A, B):
     speed_mul = float(np.clip(speed_mul, 0.3, 1.0))
 
     return steer_offset_deg, speed_mul
+
+# def compute_control_simple(contour, front, rear, midpoint, nav):
+#     """
+#     Simplified diagonal-following + obstacle avoidance
+#     """
+
+#     info = {'closest_point': None, 'tangent_vec': None,
+#             'target_pt': None, 'inside': False, 'lane_point': None}
+
+#     if contour is None or front is None or rear is None or midpoint is None:
+#         return 0.0, 0.0, info
+
+#     # -----------------------------
+#     # 1) Determine diagonal endpoints
+#     # -----------------------------
+#     if nav.diagonal_mode == "A":
+#         A = nav.ar_area[0].astype(np.float32)
+#         B = nav.ar_area[2].astype(np.float32)
+#     else:
+#         A = nav.ar_area[1].astype(np.float32)
+#         B = nav.ar_area[3].astype(np.float32)
+
+#     # forward/backward logic
+#     target = B if nav.diag_dir > 0 else A
+#     # target_pt = target_pt.astype(np.float32)
+#     info['target_pt'] = tuple(target.astype(int))
+
+#     # -----------------------------
+#     # 2) Flip direction when close
+#     # -----------------------------
+#     dist_to_target = np.linalg.norm(midpoint - target)
+#     if dist_to_target < TARGET_RADIUS_PIX:
+#         nav.diag_dir *= -1
+#         target = A if nav.diag_dir > 0 else B
+#         info['target_pt'] = tuple(target.astype(int))
+
+#     # -----------------------------
+#     # 3) Compute lane direction (unit vector along diagonal)
+#     # -----------------------------
+#     AB = B - A
+#     lane_dir = AB / (np.linalg.norm(AB) + 1e-9)
+
+#     # lane_point (orthogonal projection of midpoint onto diagonal)
+#     # P_proj = A + dot(M-A , AB̂) * AB̂
+#     t = np.dot(midpoint - A, lane_dir)
+#     lane_point = A + t * lane_dir
+#     info["lane_point"] = tuple(lane_point.astype(int))  # drawn as orange circle
+
+#     # -----------------------------
+#     # 4) Heading angle of car
+#     # -----------------------------
+#     heading_vec = front - rear
+#     heading_dir = heading_vec / (np.linalg.norm(heading_vec) + 1e-9)
+
+#     heading_angle = np.degrees(np.arctan2(-heading_dir[1], heading_dir[0]))
+#     lane_angle = np.degrees(np.arctan2(-lane_dir[1], lane_dir[0]))
+
+#     # steering error
+#     steer_err = (lane_angle - heading_angle + 180) % 360 - 180
+#     servo_cmd = np.clip(-steer_err * STEER_K, -1, 1) * MAX_SERVO
+
+#     # -----------------------------
+#     # 5) Speed (faster in middle, slower at endpoints)
+#     # -----------------------------
+#     diag_len = np.linalg.norm(A - B)
+#     speed_norm = dist_to_target / (diag_len + 1e-9)
+#     speed_cmd = MIN_SPEED + (MAX_SPEED - MIN_SPEED) * speed_norm
+
+#     # -----------------------------
+#     # 6) If car is outside polygon → steer inward + slow down
+#     # -----------------------------
+#     inside = point_inside_polygon(contour, midpoint)
+#     info["inside"] = inside
+#     if not inside:
+#         speed_cmd *= INSIDE_PENALTY
+
+#         poly_centroid = contour.reshape(-1,2).mean(axis=0)
+#         to_center = poly_centroid - midpoint
+
+#         cent_ang = np.degrees(np.arctan2(-to_center[1], to_center[0]))
+#         steer_err2 = (cent_ang - heading_angle + 180) % 360 - 180
+#         servo_cmd = np.clip(-steer_err2 * STEER_K, -1, 1) * MAX_SERVO
+
+#     # -----------------------------
+#     # 7) Obstacle avoidance (simple version)
+#     # -----------------------------
+#     if len(nav.detected_obstacles) > 0:
+#         dists = [np.linalg.norm(o["center"] - midpoint) for o in nav.detected_obstacles]
+#         idx = int(np.argmin(dists))
+#         obs = nav.detected_obstacles[idx]["center"]
+#         d = np.min(dists)
+
+#         info["closest_point"] = tuple(obs.astype(int))
+
+#         if d < OBJECT_DISTANCE:  # only react when reasonably close
+#             left_vec = np.array([-lane_dir[1], lane_dir[0]])
+#             lat = np.dot(obs - midpoint, left_vec)
+
+#             # steer away from obstacle
+#             steer_strength = np.interp(d, [50, 200], [35, 0])
+#             servo_cmd += np.sign(lat) * steer_strength * STEER_K * MAX_SERVO
+
+#             # slow down when close
+#             speed_cmd *= np.interp(d, [80, 300], [0.3, 1.0])
+
+#             # tangent vector is perpendicular to obstacle radial interaction
+#             # just for visualization
+#             tangent = np.array([left_vec[0], left_vec[1]])  # consistent sign
+#             info["tangent_vec"] = tangent
+
+#     # -----------------------------
+#     # 8) Smoothing and clamping
+#     # -----------------------------
+#     servo_s = SMOOTH * nav.last_servo + (1 - SMOOTH) * servo_cmd
+#     speed_s = SMOOTH * nav.last_speed + (1 - SMOOTH) * speed_cmd
+
+#     nav.last_servo = servo_s
+#     nav.last_speed = speed_s
+
+#     servo_out = float(np.clip(servo_s, -MAX_SERVO, MAX_SERVO))
+#     speed_out = float(np.clip(speed_s, MIN_SPEED, MAX_SPEED))
+
+#     return servo_out, speed_out, info
 
 def compute_control_area(contour, front, rear, midpoint, navigator):
     """
@@ -661,6 +790,7 @@ def run(capture, car_id):
     info = {}
 
     if navigator.area_contour is not None and midpoint is not None and front is not None and rear is not None:
+        # servo, speed, info = compute_control_simple(navigator.area_contour, front, rear, midpoint, navigator)
         servo, speed, info = compute_control_area(navigator.area_contour, front, rear, midpoint, navigator)
     else:
         # not enough info -> stop and set visualization only
@@ -675,6 +805,7 @@ def run(capture, car_id):
     cv2.putText(vis, f"Car {car_id} spd={speed:.2f} ang={servo:.2f}",
                 (10, vis.shape[0]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200,200,200), 2)
     
+    # Just for debug - comment when not needed
     # cv2.imshow("Detection", vis)
     # if cv2.waitKey(1) & 0xFF == ord('q'):
     #     sys.exit("\nQuitting the frame!")
@@ -683,11 +814,11 @@ def run(capture, car_id):
     return round(servo,2), round(speed,2), vis
 
 
-
-if __name__ == '__main__':
-    capture = init_camera(1)
-    car_idx = 0
-    while 1:
-        run(capture, car_idx)
-    capture.release()
-    cv2.destroyAllWindows()
+# Just for debug - comment when not needed
+# if __name__ == '__main__':
+#     capture = init_camera(1)
+#     car_idx = 0
+#     while 1:
+#         run(capture, car_idx)
+#     capture.release()
+#     cv2.destroyAllWindows()

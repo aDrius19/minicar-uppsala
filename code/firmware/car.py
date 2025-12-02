@@ -18,13 +18,16 @@ import busio
 from rpi_hardware_pwm import HardwarePWM
 from adafruit_motor import servo
 from adafruit_pca9685 import PCA9685
+from gpiozero import AngularServo
 
 
 class I2CIOComponents(object):
     """For each I2C I/O component that is connected to the RasPi board"""
 
-    def __init__(self, channel):
+    def __init__(self, channel, pwm_pin):
         self.i2c = busio.I2C(board.SCL, board.SDA)
+        self.channel = channel
+        self.pwm_pin = pwm_pin
         devices = [hex(x) for x in self.i2c.scan()]
 
         if "0x28" in devices or "0x29" in devices:  # BNO055 addresses
@@ -49,10 +52,13 @@ class I2CIOComponents(object):
         else:
             raise RuntimeError("No supported IMU sensor detected on I2C bus!")
         
-        self.pca = PCA9685(self.i2c)
-        self.pca.frequency = 100
+        if "0x40" in devices:
+            self.pca = PCA9685(self.i2c)
+            self.pca.frequency = 100
         
-        self.rc_car_servo = servo.Servo(self.pca.channels[channel], actuation_range=90, min_pulse=1250, max_pulse=1750)
+            self.rc_car_servo = servo.Servo(self.pca.channels[self.channel], actuation_range=90, min_pulse=1250, max_pulse=1750)
+        
+        self.rc_car_servo = AngularServo(self.pwm_pin, min_angle=-45, max_angle=45, min_pulse_width=1.25/1000, max_pulse_width=1.75/1000)
         
     def setservomotor(self, desired_value):
         self.rc_car_servo.angle = desired_value
@@ -116,7 +122,7 @@ class Output(object):
             self.pwm_pin.ChangeDutyCycle(desired_cycle)
 
 
-# works with L298N driver motor - not for much time, but better than the other ones
+# works with L298N driver motor - not for much time and that great, but still
 class Motor(object):
     """ 
         Defines Motor object to control Hardware GPIO pins and 
@@ -165,15 +171,15 @@ def cleanup():
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('192.168.0.1', 1))
 local_ip = s.getsockname()[0]
-
-#TODO the logic needs to change when multiple cars are connected
-if (str(local_ip) == '192.168.0.254'):
-    car_number = '0'
+s_local_ip = str(local_ip)
 
 if local_ip is None:
     raise ValueError('Local IP invalid')
 
-file = open('car-{}-log.txt'.format(car_number), 'w')
+if s_local_ip[-2] == '0':
+    file = open('car-{}-log.txt'.format(s_local_ip[-1]), 'w')
+else:
+    file = open('car-{}-log.txt'.format(s_local_ip[-2:]), 'w')
 
 # Bind to UDP port
 print('Binding to UDP port...\r\n')
@@ -191,7 +197,7 @@ io.setmode(io.BCM)
 
 # Setup outputs
 dcmotor = Motor(18, [14, 15])
-i2ciocomps = I2CIOComponents(0)
+i2ciocomps = I2CIOComponents(0, 19)
 led1 = Output(17)
 led2 = Output(27)
 

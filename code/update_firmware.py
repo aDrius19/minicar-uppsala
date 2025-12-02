@@ -6,17 +6,18 @@ running this code.
 """
 
 import argparse
+import sys
 import time
 import os
 import keyboard
 
-ip = '192.168.0.254'
+
 pi_board = 'Raspberry Pi 5'
 parser = argparse.ArgumentParser(description='Updates car.py of the {} board'.format(pi_board))
 parser.add_argument('-n', '--cars', nargs='+', default=[0], help='Cars to update')
 args = parser.parse_args()
 
-def ping():
+def ping(ip):
         """Tests for response"""
         return os.system('ping -n 1 -w 200 {} | find "Reply"'.format(ip))
 
@@ -27,8 +28,14 @@ def run(car_list):
     print('Starting...')
     for car_number in car_list:
         car_number = int(car_number)
+
+        # Calculate IP
+        if car_number in range(0,10):
+            ip = f"192.168.0.20{car_number}"
+        else:
+            ip = f"192.168.0.2{car_number}"
         
-        response = ping()
+        response = ping(ip)
         if response == 0:
             os.system('psftp cpslab1@{} -pw cpslab1 -b ./firmware/update_firmware.txt'.format(ip))
         elif response == 1:
@@ -53,4 +60,12 @@ def run(car_list):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Start to copy the .py file to selected minicar(s)")
+    parser.add_argument('-n', '--cars', nargs='+', type=int, default=None, help='Manual cars: input the ID of each one')
+    args = parser.parse_args()
+
+    if args.cars is None:
+        print('No player selected')
+        sys.exit(0)
+        
     run(args.cars)
