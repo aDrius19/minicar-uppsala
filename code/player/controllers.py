@@ -8,8 +8,6 @@ import keyboard
 import pygame
 import sys
 
-# import automation
-# from aut_controller import run
 from aut_controller_area import run
 from player import binds
 
@@ -20,8 +18,7 @@ def safe_write(file, msg):
         file.write(msg)
         file.flush()
 
-#TODO here also needs modification to potentially integrate a class for view the camera and logic for automation - test further to
-# support multiple cars and not give an error
+
 class Keyboard(object):
     """Defines the Keyboard object to transfer keyboard inputs into player instructions"""
 
@@ -215,12 +212,12 @@ class Keyboard(object):
                 self.brightness = round(max(0., self.brightness - 0.05), 2)
                 
                 if self.brightness > 0.:
-                    safe_write(self.file,"Decrease lights' brightness, lights' value: {}!\n".format(self.brightness))
+                    safe_write(self.file,"Decrease brightness - LEDs value: {}!\n".format(self.brightness))
             elif keyboard.is_pressed(self.binds.increase_brightness) and not keyboard.is_pressed(self.binds.lights_on):
                 self.brightness = round(min(1., self.brightness + 0.05), 2)
                 
                 if self.brightness < 1.:
-                    safe_write(self.file,"Increase lights' brightness, lights' value: {}!\n".format(self.brightness))
+                    safe_write(self.file,"Increase brightness - LEDs value: {}!\n".format(self.brightness))
 
 
 class Joystick(object):
@@ -385,7 +382,7 @@ class Joystick(object):
         # LEDs brightness control
         if self.check(self.binds.brightness) > 0.5:
             self.brightness = self.check(self.binds.brightness)
-            safe_write(self.file,"Adjust lights' brightness, lights' value: {}!\n".format(self.brightness))
+            safe_write(self.file,"Adjust brightness - LEDs value: {}!\n".format(self.brightness))
         elif self.check(self.binds.lights_on) == 1:
             self.brightness = 1.
             safe_write(self.file,"All lights full on!\n")
