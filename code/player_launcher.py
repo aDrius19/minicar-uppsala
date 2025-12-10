@@ -17,7 +17,7 @@ import cv2
 from threading import Thread, Lock
 
 from player import controllers, binds
-from aut_controller_area import init_camera
+from auto_control_diag import init_camera
 
 #TODO see if here some changes are needed also
 class Player(object):

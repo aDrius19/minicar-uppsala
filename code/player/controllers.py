@@ -8,7 +8,8 @@ import keyboard
 import pygame
 import sys
 
-from aut_controller_area import run
+from auto_control_diag import run_a
+from auto_control_follow import run_f
 from player import binds
 
 def safe_write(file, msg):
@@ -185,14 +186,14 @@ class Keyboard(object):
             if not moved:
                 self.break_until_stop()      
 
-            # self.angle, _ = automation.automation_run(self.capture, self.car_number)
-            self.angle, _, self.frame = run(self.capture, self.car_number)
+            self.angle, _, self.frame = run_a(self.capture, self.car_number)
+            # self.angle, _, self.frame = run_f(self.capture, self.car_number)
             safe_write(self.file, "Autonomous turning with {}!\n".format(self.angle))
 
         # Autonomous control
         elif self.control_type == 2:
-            # self.angle, self.speed = automation.automation_run(self.capture, self.car_number)
-            self.angle, self.speed, self.frame = run(self.capture, self.car_number)
+            # self.angle, self.speed, self.frame = run_a(self.capture, self.car_number)
+            self.angle, self.speed, self.frame = run_f(self.capture, self.car_number)
             safe_write(self.file, "Autonomous speed of {} and turning with {}!\n".format(self.speed, self.angle))
 
         # LEDs brightness control
@@ -369,14 +370,14 @@ class Joystick(object):
             self.accelerate(self.ideal_speed * self.check(self.binds.accelerate) / 10.)
             safe_write(self.file,"Manual moving forward with {}!\n".format(self.speed))
 
-            # self.angle, _ = automation.automation_run(self.capture, self.car_number)
-            self.angle, _, self.frame = run(self.capture, self.car_number)
+            self.angle, _, self.frame = run_a(self.capture, self.car_number)
+            # self.angle, _, self.frame = run_f(self.capture, self.car_number)
             safe_write(self.file, "Autonomous turning with {}!\n".format(self.angle))
 
         # Autonomous control
         elif self.control_type == 2:
-            # self.angle, self.speed = automation.automation_run(self.capture, self.car_number)
-            self.angle, self.speed, self.frame = run(self.capture, self.car_number)
+            self.angle, self.speed, self.frame = run_a(self.capture, self.car_number)
+            # self.angle, self.speed, self.frame = run_f(self.capture, self.car_number)
             safe_write(self.file, "Autonomous speed of {} and turning with {}!\n".format(self.speed, self.angle))
 
         # LEDs brightness control

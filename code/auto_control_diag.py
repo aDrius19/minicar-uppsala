@@ -6,11 +6,6 @@ from cv2 import aruco
 from threading import Lock
 
 
-#TODO
-# adjust as much as I can for one car
-# add the other ones and change the approach to include 
-# also computation based on marker_ID and/or car_ID
-
 # -------------------------
 # CONFIG / TUNING CONSTANTS
 # -------------------------
@@ -750,7 +745,7 @@ def init_camera(cam_index=0):
 # -------------------------
 # Public run() to be used by threads
 # -------------------------
-def run(capture, car_id):
+def run_a(capture, car_id):
     """
     Process a single frame and return (servo_angle, motor_speed, annotated_frame).
     - capture: cv2.VideoCapture object
@@ -806,9 +801,7 @@ def run(capture, car_id):
                 (10, vis.shape[0]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200,200,200), 2)
     
     # Just for debug - comment when not needed
-    # cv2.imshow("Detection", vis)
-    # if cv2.waitKey(1) & 0xFF == ord('q'):
-    #     sys.exit("\nQuitting the frame!")
+    # \
 
     navigator.last_frame = vis.copy()
     return round(servo,2), round(speed,2), vis
@@ -819,6 +812,6 @@ def run(capture, car_id):
 #     capture = init_camera(1)
 #     car_idx = 0
 #     while 1:
-#         run(capture, car_idx)
+#         run_a(capture, car_idx)
 #     capture.release()
 #     cv2.destroyAllWindows()

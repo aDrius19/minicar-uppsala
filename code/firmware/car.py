@@ -219,7 +219,7 @@ io.setmode(io.BCM)
 # Setup outputs
 dcmotor = Motor([18, 19], [14, 15])
 i2ciocomps = I2CIOComponents(0)
-servo = Output(23, 15., (12.5, 17.5))
+servo = Output(23, 13.5, (11., 16.))
 led1 = Output(17)
 led2 = Output(27)
 
@@ -250,7 +250,7 @@ while not done:
     if s_local_ip[-1] == '0':
         angle_cycle = float(angle) * 90. + 45.
     else:
-        angle_cycle = float(angle) * 12 + 15
+        angle_cycle = float(angle) * 12 + 13.5
     brightness_cycle = float(brightness) * 100.
 
     # Update desired values
